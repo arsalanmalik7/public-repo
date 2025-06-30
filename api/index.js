@@ -2,12 +2,12 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const authRoutes = require('./routes/auth');
-const categoryRoutes = require('./routes/categoryRoutes');
-const serviceRoutes = require('./routes/serviceRoutes');
-const bookingRoutes = require('./routes/bookingRoutes');
-const seedCategories = require('./seeders/categorySeeder');
-const seedServices = require('./seeders/serviceSeeder');
+const authRoutes = require('../routes/auth');
+const categoryRoutes = require('../routes/categoryRoutes');
+const serviceRoutes = require('../routes/serviceRoutes');
+const bookingRoutes = require('../routes/bookingRoutes');
+const seedCategories = require('../seeders/categorySeeder');
+const seedServices = require('../seeders/serviceSeeder');
 const serverless = require('serverless-http');
 
 const app = express();
@@ -25,9 +25,10 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-app.get("/", (req, res)=>{
-    res.send("Hello world")
+app.get("/", (req, res) => {
+  res.send("Hello world from Vercel!");
 });
+
 
 // Routes
 app.use('/api/auth', authRoutes);
