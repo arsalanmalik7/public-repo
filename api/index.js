@@ -25,9 +25,10 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-app.get("/", (req, res) => {
-  res.send("Hello world from Vercel!");
+app.get("/ping", (req, res) => {
+  res.send("✅ Backend is alive!");
 });
+
 
 
 // Routes
@@ -65,4 +66,6 @@ app.use((err, req, res, next) => {
 //   console.log(`Server is running on port ${PORT}`);
 //   console.log(`Server is accessible at http://localhost:${PORT}`);
 // }); 
+console.log("✅ Vercel function initialized");
+
 module.exports = serverless(app);
