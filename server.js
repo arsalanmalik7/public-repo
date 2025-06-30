@@ -8,6 +8,7 @@ const serviceRoutes = require('./routes/serviceRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
 const seedCategories = require('./seeders/categorySeeder');
 const seedServices = require('./seeders/serviceSeeder');
+const serverless = require('serverless-http');
 
 const app = express();
 
@@ -54,8 +55,9 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: 'Something went wrong!' });
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server is running on port ${PORT}`);
-  console.log(`Server is accessible at http://localhost:${PORT}`);
-}); 
+// const PORT = process.env.PORT || 3000;
+// app.listen(PORT, '0.0.0.0', () => {
+//   console.log(`Server is running on port ${PORT}`);
+//   console.log(`Server is accessible at http://localhost:${PORT}`);
+// }); 
+module.exports = serverless(app);
