@@ -23,6 +23,7 @@ const corsOptions = {
     'capacitor://localhost', // Capacitor mobile
     'ionic://localhost',     // Ionic mobile
     'http://localhost', 
+    'https://localhost', 
     'http://localhost:3000',
     'http://localhost:3001', // React Admin panel
     'https://*.ngrok-free.app'
