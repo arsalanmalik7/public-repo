@@ -20,6 +20,11 @@ const userSchema = new mongoose.Schema({
     unique: true,
     trim: true
   },
+  location: {
+    type: String,
+    trim: true,
+    default: ''
+  },
   password: {
     type: String,
     required: true

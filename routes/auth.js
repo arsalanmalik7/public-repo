@@ -3,6 +3,8 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const twilio = require('twilio');
+const userController = require('../controllers/userController');
+const auth = require('../middleware/auth'); // Assuming auth middleware is in middleware/auth.js
 
 // Initialize Twilio client only if credentials are available
 let twilioClient = null;
@@ -64,10 +66,35 @@ router.post('/signup', async (req, res) => {
 // Login route
 router.post('/login', async (req, res) => {
   try {
-    const { phoneNumber, password } = req.body;
+    const { email, phoneNumber, password } = req.body;
 
-    // Find user by phone number
-    const user = await User.findOne({ phoneNumber });
+    // Dummy admin login
+    if (email === 'admin@gmail.com' && password === 'admin123') {
+      // Generate a dummy token
+      const token = jwt.sign(
+        { userId: 'admin', role: 'admin' },
+        process.env.JWT_SECRET || 'your-secret-key',
+        { expiresIn: '7d' }
+      );
+      return res.json({
+        message: 'Login successful',
+        token,
+        user: {
+          id: 'admin',
+          fullName: 'Admin User',
+          email: 'admin@gmail.com',
+          phoneNumber: ''
+        }
+      });
+    }
+
+    // Find user by email or phone number
+    let user = null;
+    if (email) {
+      user = await User.findOne({ email });
+    } else if (phoneNumber) {
+      user = await User.findOne({ phoneNumber });
+    }
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
@@ -168,5 +195,7 @@ router.post('/reset-password', async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
+
+router.put('/profile', auth, userController.updateProfile);
 
 module.exports = router; 

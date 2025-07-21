@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const categoryController = require('../controllers/categoryController');
-const Category = require('../models/Category');
+const notificationController = require('../controllers/notificationController');
+const Notification = require('../models/Notification');
 
-// Get all categories (React Admin compatible)
+// Get all notifications (React Admin compatible)
 router.get('/', async (req, res) => {
   try {
     const filter = req.query.filter ? JSON.parse(req.query.filter) : {};
@@ -13,25 +13,16 @@ router.get('/', async (req, res) => {
     const sortOrder = sort[1] === 'ASC' ? 1 : -1;
     const skip = range[0];
     const limit = range[1] - range[0] + 1;
-    const total = await Category.countDocuments(filter);
-    const categories = await Category.find(filter)
+    const total = await Notification.countDocuments(filter);
+    const notifications = await Notification.find(filter)
       .sort({ [sortField]: sortOrder })
       .skip(skip)
       .limit(limit);
-    res.set('Content-Range', `categories ${skip}-${skip + categories.length - 1}/${total}`);
-    res.json(categories);
+    res.set('Content-Range', `notifications ${skip}-${skip + notifications.length - 1}/${total}`);
+    res.json(notifications);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
-
-// Get featured categories
-router.get('/featured', categoryController.getFeaturedCategories);
-
-// Search categories
-router.get('/search', categoryController.searchCategories);
-
-// Get category by ID
-router.get('/:id', categoryController.getCategoryById);
 
 module.exports = router; 
