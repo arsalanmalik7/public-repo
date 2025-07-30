@@ -3,9 +3,9 @@
 const express = require('express');
 const router = express.Router();
 const requestController = require('../controllers/requestController');
-const Request = require('../models/Request');
+const Booking = require('../models/Booking');
 
-// Admin: Get all requests (React Admin compatible)
+// Admin: Get all requests (React Admin compatible) - using Booking data
 router.get('/requests', async (req, res) => {
   try {
     const filter = req.query.filter ? JSON.parse(req.query.filter) : {};
@@ -15,13 +15,13 @@ router.get('/requests', async (req, res) => {
     const sortOrder = sort[1] === 'ASC' ? 1 : -1;
     const skip = range[0];
     const limit = range[1] - range[0] + 1;
-    const total = await Request.countDocuments(filter);
-    const requests = await Request.find(filter)
+    const total = await Booking.countDocuments(filter);
+    const bookings = await Booking.find(filter)
       .sort({ [sortField]: sortOrder })
       .skip(skip)
       .limit(limit);
-    res.set('Content-Range', `requests ${skip}-${skip + requests.length - 1}/${total}`);
-    res.json(requests);
+    res.set('Content-Range', `requests ${skip}-${skip + bookings.length - 1}/${total}`);
+    res.json(bookings);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

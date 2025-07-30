@@ -23,15 +23,8 @@ exports.getRequestById = async (req, res) => {
     if (!booking) {
       return res.status(404).json({ message: 'Request not found' });
     }
-    const request = {
-      id: booking._id.toString(),
-      serviceName: booking.service,
-      status: booking.status.charAt(0).toUpperCase() + booking.status.slice(1),
-      dateTime: `${booking.date}, ${booking.time}`,
-      bookingId: `#${booking._id.toString().slice(-6)}`
-      // Add other fields as needed
-    };
-    res.json(request);
+    // Return the full booking object to match the format of /api/requests
+    res.json(booking);
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch request', error: err.message });
   }
