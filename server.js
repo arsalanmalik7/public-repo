@@ -20,6 +20,10 @@ const app = express();
 const corsOptions = {
   origin: [
     'http://localhost:8100',
+    'capacitor://localhost', // Capacitor mobile
+    'ionic://localhost',     // Ionic mobile
+    'http://localhost', 
+    'https://localhost', 
     'http://localhost:3000',
     'http://localhost:3001', // React Admin panel
     'https://*.ngrok-free.app'
@@ -30,8 +34,59 @@ const corsOptions = {
   optionsSuccessStatus: 200
 };
 
-// Middleware
+// Custom CORS middleware with detailed logging
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  const method = req.method;
+  
+  // Log all CORS-related requests
+  if (origin) {
+    console.log(`🌐 CORS Request: ${method} ${req.path} from origin: ${origin}`);
+    
+    // Check if origin is allowed
+    const isAllowed = corsOptions.origin.some(allowedOrigin => {
+      if (allowedOrigin.includes('*')) {
+        // Handle wildcard patterns like https://*.ngrok-free.app
+        const pattern = allowedOrigin.replace('*', '.*');
+        const regex = new RegExp('^' + pattern + '$');
+        return regex.test(origin);
+      }
+      return allowedOrigin === origin;
+    });
+    
+    if (!isAllowed) {
+      console.error(`❌ CORS ISSUE: Origin "${origin}" is not allowed!`);
+      console.log(`📋 Allowed origins:`, corsOptions.origin);
+      console.log(`💡 Consider adding "${origin}" to the CORS configuration`);
+    } else {
+      console.log(`✅ CORS: Origin "${origin}" is allowed`);
+    }
+  }
+  
+  next();
+});
+
+// Apply CORS middleware
 app.use(cors(corsOptions));
+
+// Additional CORS error handling
+app.use((req, res, next) => {
+  // Check if request was blocked by CORS
+  res.on('finish', () => {
+    if (res.statusCode === 403 || (res.statusCode >= 400 && req.headers.origin)) {
+      console.error(`🚫 Potential CORS Issue: ${req.method} ${req.path} returned ${res.statusCode}`);
+      console.log(`🔍 Request details:`, {
+        origin: req.headers.origin,
+        method: req.method,
+        path: req.path,
+        userAgent: req.headers['user-agent']
+      });
+    }
+  });
+  next();
+});
+
+// Body parser middleware
 app.use(express.json());
 
 // Routes
@@ -48,7 +103,7 @@ app.use('/api/contact-support', contactSupportRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/users', userRoutes);
 
-// MongoDB Connection - Temporarily disabled
+// MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -68,14 +123,32 @@ mongoose.connect(process.env.MONGODB_URI, {
 
 console.log('MongoDB connection temporarily disabled - server running without database');
 
-// Error handling middleware
+// Global error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error('❌ Server Error:', err.stack);
+  
+  // Check if error might be CORS-related
+  if (err.message.includes('CORS') || err.message.includes('origin')) {
+    console.error('🌐 CORS-related error detected!');
+    console.log('🔧 Check your CORS configuration and allowed origins');
+  }
+  
   res.status(500).json({ message: 'Something went wrong!' });
+});
+
+// Handle 404 errors with CORS info
+app.use('*', (req, res) => {
+  console.log(`⚠️  404 Not Found: ${req.method} ${req.originalUrl}`);
+  if (req.headers.origin) {
+    console.log(`🌐 Request origin: ${req.headers.origin}`);
+  }
+  res.status(404).json({ message: 'Route not found' });
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server is running on port ${PORT}`);
-  console.log(`Server is accessible at http://localhost:${PORT}`);
-}); 
+  console.log(`🚀 Server is running on port ${PORT}`);
+  console.log(`🌍 Server is accessible at http://localhost:${PORT}`);
+  console.log(`🔒 CORS configured for origins:`, corsOptions.origin);
+  console.log(`📡 Allowed methods:`, corsOptions.methods);
+});
