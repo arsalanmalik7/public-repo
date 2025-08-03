@@ -8,19 +8,14 @@ const Booking = require('../models/Booking');
 // Admin: Get all requests (React Admin compatible) - using Booking data
 router.get('/requests', async (req, res) => {
   try {
-    const filter = req.query.filter ? JSON.parse(req.query.filter) : {};
-    const range = req.query.range ? JSON.parse(req.query.range) : [0, 9];
-    const sort = req.query.sort ? JSON.parse(req.query.sort) : ['_id', 'ASC'];
-    const sortField = sort[0];
-    const sortOrder = sort[1] === 'ASC' ? 1 : -1;
-    const skip = range[0];
-    const limit = range[1] - range[0] + 1;
-    const total = await Booking.countDocuments(filter);
-    const bookings = await Booking.find(filter)
-      .sort({ [sortField]: sortOrder })
-      .skip(skip)
-      .limit(limit);
-    res.set('Content-Range', `requests ${skip}-${skip + bookings.length - 1}/${total}`);
+    // Get all bookings without pagination, sorted alphabetically
+    const bookings = await Booking.find({})
+      .sort({ createdAt: 1 }) // Sort by creation date ascending (A to Z)
+      .populate('userId', 'name email'); // Populate user details
+    
+    // Set the total count in Content-Range header
+    const total = bookings.length;
+    res.set('Content-Range', `requests 0-${total - 1}/${total}`);
     res.json(bookings);
   } catch (error) {
     res.status(500).json({ message: error.message });
