@@ -25,6 +25,7 @@ const corsOptions = {
     'http://localhost', 
     'https://localhost', 
     'http://localhost:3000',
+    'https://public-repo-j9sl.onrender.com',
     'http://localhost:3001', // React Admin panel
     'https://*.ngrok-free.app'
   ],
