@@ -6,6 +6,39 @@ const twilio = require('twilio');
 const userController = require('../controllers/userController');
 const auth = require('../middleware/auth'); // Assuming auth middleware is in middleware/auth.js
 const nodemailer = require('nodemailer');
+const { google } = require('googleapis');
+
+const CLIENT_ID = process.env.CLIENT_ID;
+const CLIENT_SECRET = process.env.CLIENT_SECRET;
+const REDIRECT_URI = "https://developers.google.com/oauthplayground";
+const REFRESH_TOKEN = process.env.REFRESH_TOKEN;
+
+const oauth2Client = new google.auth.OAuth2(
+  CLIENT_ID,
+  CLIENT_SECRET,
+  REDIRECT_URI
+);
+
+oauth2Client.setCredentials({ refresh_token: REFRESH_TOKEN });
+
+async function createTransporter() {
+  const accessToken = await oauth2Client.getAccessToken();
+
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      type: "OAuth2",
+      user: "arsalantech277@gmail.com",  // your Gmail
+      clientId: CLIENT_ID,
+      clientSecret: CLIENT_SECRET,
+      refreshToken: REFRESH_TOKEN,
+      accessToken: accessToken.token
+    }
+  });
+
+  return transporter;
+}
+
 
 // Initialize Twilio client only if credentials are available
 let twilioClient = null;
@@ -15,15 +48,7 @@ if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
     process.env.TWILIO_AUTH_TOKEN
   );
 }
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS // MUST be app password
-  }
-});
+
 
 
 
@@ -32,7 +57,6 @@ router.post('/signup', async (req, res) => {
   try {
     const { fullName, email, phoneNumber, password } = req.body;
 
-    // Check if user already exists
     const existingUser = await User.findOne({
       $or: [{ email }, { phoneNumber }]
     });
@@ -43,21 +67,17 @@ router.post('/signup', async (req, res) => {
       });
     }
 
-    // send otp to email
     const otp = Math.floor(1000 + Math.random() * 9000).toString();
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
+
+    const transporter = await createTransporter();
+
+    await transporter.sendMail({
+      from: "arsalantech277@gmail.com",
       to: email,
-      subject: 'OTP for Signup',
+      subject: "OTP for Signup",
       text: `Your OTP for signup is: ${otp}`
-    };
+    });
 
-    console.log("Before sending email");
-    await transporter.sendMail(mailOptions);
-    console.log("After sending email");
-
-
-    // Create new user
     const user = new User({
       fullName,
       email,
@@ -69,26 +89,22 @@ router.post('/signup', async (req, res) => {
 
     await user.save();
 
-
     res.status(201).json({
-      message: 'User created successfully, please verify OTP sent to your email to activate your account.',
+      message: "User created successfully. Please verify OTP.",
       user: {
         id: user._id,
-        fullName: user.fullName,
-        email: user.email,
-        phoneNumber: user.phoneNumber
-      }
+        fullName,
+        email,
+        phoneNumber,
+      },
     });
-  } catch (err) {
-    transporter.verify((error, success) => {
-      console.log("SMTP Verify error:", error);
-      console.log("SMTP Verify success:", success);
-    });
-    console.error(err);
 
-    res.status(500).json({ message: err.message });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error sending email" });
   }
 });
+
 
 router.post('/verify-otp', async (req, res) => {
   try {
