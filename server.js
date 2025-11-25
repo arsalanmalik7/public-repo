@@ -13,6 +13,7 @@ const chatRoutes = require('./routes/chatRoutes');
 const userRoutes = require('./routes/userRoutes');
 const seedCategories = require('./seeders/categorySeeder');
 const seedServices = require('./seeders/serviceSeeder');
+const morgan = require('morgan');
 
 const app = express();
 
@@ -54,6 +55,7 @@ const corsOptions = {
 
 // Middleware
 app.use(cors(corsOptions));
+app.use(morgan('dev'));
 
 // Additional CORS handling for development
 app.use((req, res, next) => {
