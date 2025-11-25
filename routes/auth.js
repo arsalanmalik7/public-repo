@@ -79,8 +79,14 @@ router.post('/signup', async (req, res) => {
         phoneNumber: user.phoneNumber
       }
     });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+  } catch (err) {
+    transporter.verify((error, success) => {
+      console.log("SMTP Verify error:", error);
+      console.log("SMTP Verify success:", success);
+    });
+    console.error(err);
+
+    res.status(500).json({ message: err.message });
   }
 });
 
