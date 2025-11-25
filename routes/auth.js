@@ -51,7 +51,10 @@ router.post('/signup', async (req, res) => {
       text: `Your OTP for signup is: ${otp}`
     };
 
+    console.log("Before sending email");
     await transporter.sendMail(mailOptions);
+    console.log("After sending email");
+
 
     // Create new user
     const user = new User({
