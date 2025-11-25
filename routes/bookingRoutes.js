@@ -2,9 +2,10 @@ const express = require('express');
 const router = express.Router();
 const Booking = require('../models/Booking');
 const auth = require('../middleware/auth');
+const admin = require('../middleware/admin');
 
 // Admin: Get all bookings (React Admin compatible)
-router.get('/', async (req, res) => {
+router.get('/', auth, admin, async (req, res) => {
   try {
     const filter = req.query.filter ? JSON.parse(req.query.filter) : {};
     const range = req.query.range ? JSON.parse(req.query.range) : [0, 9];
@@ -22,6 +23,129 @@ router.get('/', async (req, res) => {
     res.json(bookings);
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+});
+
+// Admin: Get single booking
+router.get('/admin/:id', auth, admin, async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+    
+    res.json(booking);
+  } catch (error) {
+    console.error('Error fetching booking:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Error fetching booking'
+    });
+  }
+});
+
+// Admin: Update booking status
+router.patch('/admin/:id', auth, admin, async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+    
+    // Update booking with new data
+    Object.assign(booking, req.body);
+    await booking.save();
+    
+    res.json(booking);
+  } catch (error) {
+    console.error('Error updating booking:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Error updating booking'
+    });
+  }
+});
+
+// Admin: Confirm booking
+router.patch('/admin/:id/confirm', auth, admin, async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+    
+    booking.status = 'confirmed';
+    await booking.save();
+    
+    res.json(booking);
+  } catch (error) {
+    console.error('Error confirming booking:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Error confirming booking'
+    });
+  }
+});
+
+// Admin: Cancel booking
+router.patch('/admin/:id/cancel', auth, admin, async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+    
+    booking.status = 'cancelled';
+    await booking.save();
+    
+    res.json(booking);
+  } catch (error) {
+    console.error('Error cancelling booking:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Error cancelling booking'
+    });
+  }
+});
+
+// Admin: Complete booking
+router.patch('/admin/:id/complete', auth, admin, async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+    
+    booking.status = 'completed';
+    await booking.save();
+    
+    res.json(booking);
+  } catch (error) {
+    console.error('Error completing booking:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Error completing booking'
+    });
   }
 });
 
@@ -83,7 +207,7 @@ router.get('/my-bookings', auth, async (req, res) => {
   }
 });
 
-// Get a single booking
+// Get a single booking (user route)
 router.get('/:id', auth, async (req, res) => {
   try {
     const booking = await Booking.findOne({
@@ -111,7 +235,7 @@ router.get('/:id', auth, async (req, res) => {
   }
 });
 
-// Cancel a booking
+// Cancel a booking (user route)
 router.patch('/:id/cancel', auth, async (req, res) => {
   try {
     const booking = await Booking.findOne({

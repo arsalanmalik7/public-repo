@@ -21,7 +21,21 @@ const auth = async (req, res, next) => {
       // Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
       
-      // Find user
+      // Handle admin case
+      if (decoded.userId === 'admin' && decoded.role === 'admin') {
+        console.log('Auth middleware - Admin token detected');
+        req.token = token;
+        req.user = {
+          _id: 'admin',
+          role: 'admin',
+          fullName: 'Admin User',
+          email: 'admin@gmail.com'
+        };
+        console.log('Auth middleware - Set req.user:', req.user);
+        return next();
+      }
+      
+      // Find user for regular users
       const user = await User.findOne({ _id: decoded.userId });
       if (!user) {
         console.log('User not found for token');

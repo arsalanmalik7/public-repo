@@ -5,6 +5,7 @@ const User = require('../models/User');
 const twilio = require('twilio');
 const userController = require('../controllers/userController');
 const auth = require('../middleware/auth'); // Assuming auth middleware is in middleware/auth.js
+const nodemailer = require('nodemailer');
 
 // Initialize Twilio client only if credentials are available
 let twilioClient = null;
@@ -14,6 +15,14 @@ if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
     process.env.TWILIO_AUTH_TOKEN
   );
 }
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  }
+});
+
 
 // Signup route
 router.post('/signup', async (req, res) => {
@@ -21,37 +30,86 @@ router.post('/signup', async (req, res) => {
     const { fullName, email, phoneNumber, password } = req.body;
 
     // Check if user already exists
-    const existingUser = await User.findOne({ 
-      $or: [{ email }, { phoneNumber }] 
+    const existingUser = await User.findOne({
+      $or: [{ email }, { phoneNumber }]
     });
 
     if (existingUser) {
-      return res.status(400).json({ 
-        message: 'User with this email or phone number already exists' 
+      return res.status(400).json({
+        message: 'User with this email or phone number already exists'
       });
     }
+
+    // send otp to email
+    const otp = Math.floor(1000 + Math.random() * 9000).toString();
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'OTP for Signup',
+      text: `Your OTP for signup is: ${otp}`
+    };
+
+    await transporter.sendMail(mailOptions);
 
     // Create new user
     const user = new User({
       fullName,
       email,
       phoneNumber,
-      password
+      password,
+      otp: { code: otp, expiresAt: new Date(Date.now() + 10 * 60 * 1000) },
+      status: 'inactive'
     });
 
     await user.save();
 
+
+    res.status(201).json({
+      message: 'User created successfully, please verify OTP sent to your email to activate your account.',
+      user: {
+        id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        phoneNumber: user.phoneNumber
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+router.post('/verify-otp', async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    const user = await User.findOne({ $or: [{ email }, { otp: { code: otp } }] });
+
+    console.log(user, otp);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (user.otp.code !== otp) {
+      return res.status(400).json({ message: 'Invalid OTP' });
+    }
+
+
     // Generate JWT token
     const token = jwt.sign(
-      { userId: user._id },
+      { userId: user._id, role: user.role || 'user' },
       process.env.JWT_SECRET || 'your-secret-key',
       { expiresIn: '7d' }
     );
 
-    res.status(201).json({
-      message: 'User created successfully',
-      token,
-      user: {
+    user.status = 'active';
+    user.otp = {
+      code: null,
+      expiresAt: null
+    };
+    await user.save();
+
+    res.json({
+      message: 'OTP verified successfully. Account activated.', token, user: {
         id: user._id,
         fullName: user.fullName,
         email: user.email,
@@ -107,7 +165,7 @@ router.post('/login', async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign(
-      { userId: user._id },
+      { userId: user._id, role: user.role || 'user' },
       process.env.JWT_SECRET || 'your-secret-key',
       { expiresIn: '7d' }
     );
@@ -158,7 +216,7 @@ router.post('/forgot-password', async (req, res) => {
       res.json({ message: 'OTP sent successfully' });
     } else {
       // For development/testing, just return the OTP
-      res.json({ 
+      res.json({
         message: 'OTP generated successfully (Twilio not configured)',
         otp: otp // Only include this in development
       });
@@ -179,9 +237,9 @@ router.post('/reset-password', async (req, res) => {
     }
 
     // Check if OTP exists and is valid
-    if (!user.resetPasswordOTP || 
-        user.resetPasswordOTP.code !== otp || 
-        user.resetPasswordOTP.expiresAt < new Date()) {
+    if (!user.resetPasswordOTP ||
+      user.resetPasswordOTP.code !== otp ||
+      user.resetPasswordOTP.expiresAt < new Date()) {
       return res.status(400).json({ message: 'Invalid or expired OTP' });
     }
 
