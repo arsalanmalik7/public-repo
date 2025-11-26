@@ -15,11 +15,7 @@ router.get('/', auth, admin, async (req, res) => {
     const skip = range[0];
     const limit = range[1] - range[0] + 1;
     const total = await Booking.countDocuments(filter);
-    const bookings = await Booking.find(filter)
-      .sort({ [sortField]: sortOrder })
-      .skip(skip)
-      .limit(limit);
-    res.set('Content-Range', `bookings ${skip}-${skip + bookings.length - 1}/${total}`);
+    const bookings = await Booking.find(filter);
     res.json(bookings);
   } catch (error) {
     res.status(500).json({ message: error.message });
