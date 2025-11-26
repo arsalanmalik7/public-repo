@@ -67,24 +67,22 @@ router.post('/signup', async (req, res) => {
       });
     }
 
-    const otp = Math.floor(1000 + Math.random() * 9000).toString();
+    // const otp = Math.floor(1000 + Math.random() * 9000).toString();
 
-    const transporter = await createTransporter();
+    // const transporter = await createTransporter();
 
-    await transporter.sendMail({
-      from: "arsalantech277@gmail.com",
-      to: email,
-      subject: "OTP for Signup",
-      text: `Your OTP for signup is: ${otp}`
-    });
+    // await transporter.sendMail({
+    //   from: "arsalantech277@gmail.com",
+    //   to: email,
+    //   subject: "OTP for Signup",
+    //   text: `Your OTP for signup is: ${otp}`
+    // });
 
     const user = new User({
       fullName,
       email,
       phoneNumber,
       password,
-      otp: { code: otp, expiresAt: new Date(Date.now() + 10 * 60 * 1000) },
-      status: 'inactive'
     });
 
     await user.save();
