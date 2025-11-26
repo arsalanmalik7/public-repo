@@ -87,8 +87,16 @@ router.post('/signup', async (req, res) => {
 
     await user.save();
 
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: user._id, role: user.role || 'user' },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '7d' }
+    );
+
     res.status(201).json({
-      message: "User created successfully. Please verify OTP.",
+      message: "User created successfully.",
+      token,
       user: {
         id: user._id,
         fullName,
