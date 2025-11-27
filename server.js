@@ -24,6 +24,7 @@ const corsOptions = {
     if (!origin) return callback(null, true);
     
     const allowedOrigins = [
+      'http://localhost',
       'http://localhost:8100',
       'http://localhost:3001',
       'http://localhost:3000',
