@@ -14,6 +14,7 @@ const userRoutes = require('./routes/userRoutes');
 const seedCategories = require('./seeders/categorySeeder');
 const seedServices = require('./seeders/serviceSeeder');
 const morgan = require('morgan');
+const path = require('path');
 
 const app = express();
 
@@ -55,9 +56,17 @@ const corsOptions = {
   preflightContinue: false
 };
 
+
+
 // Middleware
 app.use(cors(corsOptions));
 app.use(morgan('dev'));
+
+app.use(`/`, express.static(path.join(__dirname, '/public')))
+app.get(`*`, (req, res) => {
+    res.sendFile(path.join(__dirname + '/public/index.html'))
+})
+
 
 // Additional CORS handling for development
 app.use((req, res, next) => {
