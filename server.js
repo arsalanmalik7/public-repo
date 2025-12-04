@@ -62,10 +62,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(morgan('dev'));
 
-app.use(`/`, express.static(path.join(__dirname, '/public')))
-app.get(`*`, (req, res) => {
-    res.sendFile(path.join(__dirname + '/public/index.html'))
-})
+
 
 
 // Additional CORS handling for development
@@ -91,10 +88,7 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 
-// Routes
-app.get('/', (req, res) => {
-  res.send('Server is running');
-});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/services', serviceRoutes);
@@ -124,6 +118,11 @@ mongoose.connect(process.env.MONGODB_URI, {
 .catch(err => console.error('MongoDB connection error:', err));
 
 console.log('MongoDB connection temporarily disabled - server running without database');
+
+app.use(`/`, express.static(path.join(__dirname, '/public')))
+app.get(`*`, (req, res) => {
+    res.sendFile(path.join(__dirname + '/public/index.html'))
+})
 
 // Error handling middleware
 app.use((err, req, res, next) => {
